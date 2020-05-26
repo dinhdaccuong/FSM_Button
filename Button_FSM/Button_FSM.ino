@@ -1,9 +1,15 @@
 ﻿#include "tim.h"
 #include "bsp.h"
 
+typedef enum
+{
+	FSM_STATE_IDLE,
+	FSM_STATE_WAIT_UP,
+	FSM_STATE_WAIT_DOWN
+} fsm_state_t;
 typedef struct
 {
-	uint8_t fsmStatus;
+	fsm_state_t fsmStatus;
 	uint8_t buttonStatus;
 } fsm_t;
 
@@ -152,31 +158,31 @@ void buttonDoubleClickActive()
 void fsmInit()
 {
 	fsmInstance.buttonStatus = 0;
-	fsmInstance.fsmStatus = 0;
+	fsmInstance.fsmStatus = FSM_STATE_IDLE;
 }
 void fsm()
 {
 	switch (fsmInstance.fsmStatus)
 	{
-	case 0:	
+	case FSM_STATE_IDLE:	
 		if (!fsmInstance.buttonStatus)		// button down
 		{
-			fsmInstance.fsmStatus = 1;
+			fsmInstance.fsmStatus = FSM_STATE_WAIT_UP;
 			startTimerCheckPress(1000);
 		}
 		break;
-	case 1:
+	case FSM_STATE_WAIT_UP:
 		if (fsmInstance.buttonStatus)		// button up
 		{
-			fsmInstance.fsmStatus = 2;
+			fsmInstance.fsmStatus = FSM_STATE_WAIT_DOWN;
 			stopTimerCheckPress();
 			startTimerCheckClick(200);
 		}
 		break;
-	case 2:
+	case FSM_STATE_WAIT_DOWN:
 		if (!fsmInstance.buttonStatus)
 		{
-			fsmInstance.fsmStatus = 0;
+			fsmInstance.fsmStatus = FSM_STATE_IDLE;
 			stopTimerCheckClick();
 			buttonDoubleClickActive();			
 		}
@@ -194,11 +200,11 @@ void buttonHandler()
 void timerCheckClickHandler()
 {
 	buttonClickActive();
-	fsmInstance.fsmStatus = 0;
+	fsmInstance.fsmStatus = FSM_STATE_IDLE;
 }
 
 void timerCheckPressHandler()
 {	
 	buttonPressActive();
-	fsmInstance.fsmStatus = 0;
+	fsmInstance.fsmStatus = FSM_STATE_IDLE;
 }
